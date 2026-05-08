@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Event Check-in System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1rem 2rem; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .subtitle { font-size: 13px; color: #666; }
+  nav { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 0 2rem; display: flex; gap: 0; }
+  .nav-btn { padding: 14px 20px; border: none; background: none; font-size: 13px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+  .nav-btn:hover { color: #1a1a1a; background: #f9f9f6; }
+  .nav-btn.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+  main { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group label { font-size: 13px; color: #555; font-weight: 500; }
+  .form-group input, .form-group select { padding: 9px 12px; border: 1px solid #d0d0c8; border-radius: 7px; font-size: 14px; background: #fff; color: #1a1a1a; outline: none; transition: border 0.15s; }
+  .form-group input:focus, .form-group select:focus { border-color: #1a1a1a; }
+  .btn-primary { background: #1a1a1a; color: #fff; border: none; padding: 10px 20px; border-radius: 7px; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-weight: 500; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border: 1px solid #d0d0c8; border-radius: 6px; background: #fff; cursor: pointer; color: #555; display: inline-flex; align-items: center; gap: 4px; transition: background 0.15s; }
+  .btn-sm:hover { background: #f5f5f0; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+  .badge-success { background: #e8f5e9; color: #2e7d32; }
+  .badge-warning { background: #fff8e1; color: #f57f17; }
+  .badge-info { background: #e3f2fd; color: #1565c0; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: #f9f9f6; border: 1px solid #e0e0d8; border-radius: 8px; padding: 1rem 1.25rem; }
+  .stat-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: #1a1a1a; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 14px; color: #666; border-bottom: 1px solid #e0e0d8; font-weight: 500; background: #fafaf7; }
+  td { padding: 11px 14px; border-bottom: 1px solid #f0f0ec; color: #1a1a1a; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf7; }
+  .qr-input-row { display: flex; gap: 10px; }
+  .qr-input-row input { flex: 1; padding: 9px 12px; border: 1px solid #d0d0c8; border-radius: 7px; font-size: 14px; outline: none; }
+  .qr-input-row input:focus { border-color: #1a1a1a; }
+  .checkin-result { padding: 1rem 1.25rem; border-radius: 8px; margin-top: 1rem; display: none; }
+  .checkin-ok { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .checkin-err { background: #ffebee; border: 1px solid #ef9a9a; }
+  .checkin-warn { background: #fff8e1; border: 1px solid #ffe082; }
+  .checkin-result .res-name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .checkin-result .res-meta { font-size: 13px; color: #555; }
+  .bar-wrap { margin-top: 0.5rem; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .bar-label { width: 90px; color: #555; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 10px; background: #f0f0ec; border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: #1a1a1a; transition: width 0.5s; }
+  .bar-count { width: 40px; color: #666; font-size: 12px; }
+  .section-title { font-size: 16px; font-weight: 600; margin-bottom: 1rem; color: #1a1a1a; }
+  .mini-id { font-family: monospace; font-size: 12px; background: #f0f0ec; padding: 2px 8px; border-radius: 5px; color: #444; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 14px; display: none; align-items: center; gap: 8px; z-index: 1000; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .card-header { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: #1a1a1a; padding-bottom: 0.75rem; border-bottom: 1px solid #f0f0ec; }
+  @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } main { padding: 1rem; } nav { overflow-x: auto; } .nav-btn { white-space: nowrap; } }
+  @media print { nav, header .subtitle, .btn-primary, .btn-sm { display: none !important; } body { background: #fff; } }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#1a1a1a"/><path d="M8 12h16M8 16h10M8 20h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="24" cy="20" r="4" fill="#fff"/><path d="M22.5 20l1 1 2-2" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div>
+    <h1>Event Check-in System</h1>
+    <div class="subtitle">Admin Panel — Government / Corporate Events</div>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showTab('register', this)">📋 Registration</button>
+  <button class="nav-btn" onclick="showTab('checkin', this)">🔍 Check-in</button>
+  <button class="nav-btn" onclick="showTab('dashboard', this)">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showTab('report', this)">📄 Report</button>
+</nav>
+
+<main>
+
+<!-- REGISTRATION -->
+<div id="register" class="section active">
+  <div class="card">
+    <div class="card-header">Register new attendee</div>
+    <div class="form-row">
+      <div class="form-group"><label>Full name *</label><input type="text" id="reg-name" placeholder="e.g. Rahul Sharma" /></div>
+      <div class="form-group"><label>Mobile number *</label><input type="tel" id="reg-phone" placeholder="10-digit number" maxlength="10" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email address</label><input type="email" id="reg-email" placeholder="email@example.com" /></div>
+      <div class="form-group"><label>Organization / Department</label><input type="text" id="reg-org" placeholder="e.g. Ministry of IT" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Select event</label>
+        <select id="reg-event">
+          <option value="E001">Annual Government Summit 2025</option>
+          <option value="E002">Smart City Expo</option>
+          <option value="E003">Digital India Workshop</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Attendee category</label>
+        <select id="reg-cat">
+          <option>General</option>
+          <option>VIP</option>
+          <option>Speaker</option>
+          <option>Press</option>
+          <option>Staff</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="registerAttendee()">✅ Register attendee</button>
+  </div>
+
+  <div class="section-title" style="margin-top:1.5rem;">All registered attendees</div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table><thead><tr><th>Name</th><th>Mobile</th><th>Event</th><th>Category</th><th>ID</th><th>Status</th></tr></thead>
+    <tbody id="reg-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- CHECK-IN -->
+<div id="checkin" class="section">
+  <div class="card">
+    <div class="card-header">QR code / ID check-in</div>
+    <div class="form-group"><label>Enter Attendee ID or Mobile number</label>
+      <div class="qr-input-row">
+        <input type="text" id="qr-input" placeholder="e.g. ATT-001 or 9876543210" onkeydown="if(event.key==='Enter') doCheckin()" />
+        <button class="btn-primary" onclick="doCheckin()">🔍 Check in</button>
+      </div>
+    </div>
+    <div class="checkin-result" id="checkin-result"></div>
+  </div>
+
+  <div class="section-title" style="margin-top:1.5rem;">Today's check-ins (<span id="checkin-count">0</span>)</div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table><thead><tr><th>Name</th><th>ID</th><th>Category</th><th>Event</th><th>Check-in time</th></tr></thead>
+    <tbody id="checkin-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section">
+  <div class="section-title">Live dashboard</div>
+  <div class="stat-grid" id="stat-grid"></div>
+  <div class="form-row" style="margin-bottom:0;">
+    <div class="card">
+      <div class="card-header">Check-ins by category</div>
+      <div class="bar-wrap" id="cat-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">By event</div>
+      <div class="bar-wrap" id="ev-bars"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:0; overflow:hidden; margin-top:1.25rem;">
+    <table><thead><tr><th>Name</th><th>Mobile</th><th>Category</th><th>Event</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody id="dash-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="report" class="section">
+  <div class="card">
+    <div class="card-header">Attendance report</div>
+    <div class="form-row">
+      <div class="form-group"><label>Filter by event</label>
+        <select id="rep-event" onchange="renderReport()">
+          <option value="">All events</option>
+          <option value="E001">Annual Government Summit 2025</option>
+          <option value="E002">Smart City Expo</option>
+          <option value="E003">Digital India Workshop</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Filter by status</label>
+        <select id="rep-status" onchange="renderReport()">
+          <option value="">All</option>
+          <option value="checked-in">Checked in</option>
+          <option value="registered">Not yet checked in</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="exportCSV()">⬇️ Export CSV</button>
+      <button class="btn-sm" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+  <div class="stat-grid" id="rep-stats"></div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table><thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Organization</th><th>Category</th><th>Event</th><th>Status</th><th>Time</th></tr></thead>
+    <tbody id="rep-tbody"></tbody></table>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const EVENTS = { E001:'Govt Summit 2025', E002:'Smart City Expo', E003:'Digital India' };
+let attendees = [
+  { id:'ATT-001', name:'Priya Mehta', phone:'9876543210', email:'priya@gov.in', org:'Ministry of IT', event:'E001', cat:'VIP', status:'checked-in', time:'09:12 AM' },
+  { id:'ATT-002', name:'Arjun Singh', phone:'9123456780', email:'arjun@smartcity.in', org:'Smart City Corp', event:'E002', cat:'Speaker', status:'checked-in', time:'09:45 AM' },
+  { id:'ATT-003', name:'Neha Patel', phone:'9988776655', email:'neha@xyz.com', org:'XYZ Ltd.', event:'E001', cat:'General', status:'registered', time:'' },
+  { id:'ATT-004', name:'Rohit Kumar', phone:'9765432100', email:'rohit@press.in', org:'India Today', event:'E001', cat:'Press', status:'checked-in', time:'10:00 AM' },
+  { id:'ATT-005', name:'Sita Verma', phone:'9654321098', email:'sita@gov.in', org:'DPIT', event:'E003', cat:'Staff', status:'registered', time:'' },
+];
+let counter = attendees.length + 1;
+
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='dashboard') renderDashboard();
+  if(id==='report') renderReport();
+  if(id==='register') renderRegTable();
+  if(id==='checkin') renderCheckinTable();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'flex';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display='none', 2800);
+}
+
+function registerAttendee() {
+  const name = document.getElementById('reg-name').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const org = document.getElementById('reg-org').value.trim();
+  const event = document.getElementById('reg-event').value;
+  const cat = document.getElementById('reg-cat').value;
+  if(!name) { alert('Please enter full name.'); return; }
+  if(!/^\d{10}$/.test(phone)) { alert('Please enter a valid 10-digit mobile number.'); return; }
+  if(attendees.find(a=>a.phone===phone)) { alert('This mobile number is already registered.'); return; }
+  const id = 'ATT-' + String(counter).padStart(3,'0');
+  attendees.push({ id, name, phone, email, org, event, cat, status:'registered', time:'' });
+  counter++;
+  ['reg-name','reg-phone','reg-email','reg-org'].forEach(i => document.getElementById(i).value='');
+  renderRegTable();
+  toast('✅ Registered: ' + name + ' — ' + id);
+}
+
+function renderRegTable() {
+  document.getElementById('reg-tbody').innerHTML = attendees.length ? attendees.map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td>${a.phone}</td>
+      <td>${EVENTS[a.event]}</td>
+      <td>${a.cat}</td>
+      <td><span class="mini-id">${a.id}</span></td>
+      <td>${a.status==='checked-in'?'<span class="badge badge-success">✓ Checked in</span>':'<span class="badge badge-warning">⏳ Registered</span>'}</td>
+    </tr>`).join('')
+  : '<tr><td colspan="6" style="text-align:center;color:#999;padding:2rem;">No attendees registered yet.</td></tr>';
+}
+
+function doCheckin() {
+  const val = document.getElementById('qr-input').value.trim().toUpperCase();
+  const result = document.getElementById('checkin-result');
+  if(!val) return;
+  const att = attendees.find(a => a.id===val || a.phone===val || a.phone===document.getElementById('qr-input').value.trim());
+  if(!att) {
+    result.className='checkin-result checkin-err';
+    result.innerHTML=`<div class="res-name" style="color:#c62828">❌ Attendee not found</div><div class="res-meta">No record found for: ${val}</div>`;
+    result.style.display='block'; return;
+  }
+  if(att.status==='checked-in') {
+    result.className='checkin-result checkin-warn';
+    result.innerHTML=`<div class="res-name" style="color:#e65100">⚠️ Already checked in</div><div class="res-meta">${att.name} was checked in at ${att.time}</div>`;
+    result.style.display='block'; return;
+  }
+  att.status='checked-in';
+  att.time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  result.className='checkin-result checkin-ok';
+  result.innerHTML=`<div class="res-name" style="color:#1b5e20">✅ Check-in successful!</div>
+    <div class="res-meta" style="margin-top:6px;"><strong>${att.name}</strong> &nbsp;·&nbsp; ${att.cat} &nbsp;·&nbsp; ${EVENTS[att.event]}</div>
+    <div class="res-meta">📱 ${att.phone} &nbsp;·&nbsp; 🏢 ${att.org||'—'} &nbsp;·&nbsp; 🕐 ${att.time}</div>`;
+  result.style.display='block';
+  document.getElementById('qr-input').value='';
+  renderCheckinTable();
+  toast('✅ Checked in: ' + att.name);
+}
+
+function renderCheckinTable() {
+  const checked = attendees.filter(a=>a.status==='checked-in');
+  document.getElementById('checkin-count').textContent = checked.length;
+  document.getElementById('checkin-tbody').innerHTML = checked.length ? checked.map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td><span class="mini-id">${a.id}</span></td>
+      <td>${a.cat}</td>
+      <td>${EVENTS[a.event]}</td>
+      <td>${a.time}</td>
+    </tr>`).join('')
+  : '<tr><td colspan="5" style="text-align:center;color:#999;padding:2rem;">No check-ins yet today.</td></tr>';
+}
+
+function renderDashboard() {
+  const total = attendees.length;
+  const checked = attendees.filter(a=>a.status==='checked-in').length;
+  const pct = total ? Math.round(checked/total*100) : 0;
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total registered</div><div class="stat-value">${total}</div></div>
+    <div class="stat-card"><div class="stat-label">Checked in</div><div class="stat-value">${checked}</div></div>
+    <div class="stat-card"><div class="stat-label">Not checked in</div><div class="stat-value">${total-checked}</div></div>
+    <div class="stat-card"><div class="stat-label">Attendance rate</div><div class="stat-value">${pct}%</div></div>`;
+
+  const cats={};
+  attendees.forEach(a=>{ cats[a.cat]=cats[a.cat]||{t:0,c:0}; cats[a.cat].t++; if(a.status==='checked-in') cats[a.cat].c++; });
+  const maxC = Math.max(...Object.values(cats).map(c=>c.t),1);
+  document.getElementById('cat-bars').innerHTML=Object.entries(cats).map(([cat,c])=>`
+    <div class="bar-row">
+      <span class="bar-label">${cat}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c.c/maxC*100)}%"></div></div>
+      <span class="bar-count">${c.c}/${c.t}</span>
+    </div>`).join('');
+
+  const evs={};
+  attendees.forEach(a=>{ evs[a.event]=evs[a.event]||{t:0,c:0}; evs[a.event].t++; if(a.status==='checked-in') evs[a.event].c++; });
+  const maxE = Math.max(...Object.values(evs).map(e=>e.t),1);
+  document.getElementById('ev-bars').innerHTML=Object.entries(evs).map(([ev,e])=>`
+    <div class="bar-row">
+      <span class="bar-label" style="font-size:11px;">${EVENTS[ev]}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(e.c/maxE*100)}%"></div></div>
+      <span class="bar-count">${e.c}/${e.t}</span>
+    </div>`).join('');
+
+  document.getElementById('dash-tbody').innerHTML=attendees.map(a=>`
+    <tr>
+      <td>${a.name}</td><td>${a.phone}</td><td>${a.cat}</td><td>${EVENTS[a.event]}</td>
+      <td>${a.status==='checked-in'?'<span class="badge badge-success">✓ In</span>':'<span class="badge badge-warning">⏳</span>'}</td>
+      <td><button class="btn-sm" onclick="manualToggle('${a.id}')">${a.status==='checked-in'?'↩ Undo':'✓ Check in'}</button></td>
+    </tr>`).join('');
+}
+
+function manualToggle(id) {
+  const a = attendees.find(x=>x.id===id); if(!a) return;
+  if(a.status==='checked-in') { a.status='registered'; a.time=''; toast('↩ Undone: '+a.name); }
+  else { a.status='checked-in'; a.time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); toast('✅ Checked in: '+a.name); }
+  renderDashboard();
+}
+
+function renderReport() {
+  const evF=document.getElementById('rep-event').value;
+  const stF=document.getElementById('rep-status').value;
+  let data=attendees;
+  if(evF) data=data.filter(a=>a.event===evF);
+  if(stF) data=data.filter(a=>a.status===stF);
+  const ch=data.filter(a=>a.status==='checked-in').length;
+  document.getElementById('rep-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total (filtered)</div><div class="stat-value">${data.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Checked in</div><div class="stat-value">${ch}</div></div>
+    <div class="stat-card"><div class="stat-label">Not checked in</div><div class="stat-value">${data.length-ch}</div></div>
+    <div class="stat-card"><div class="stat-label">Attendance %</div><div class="stat-value">${data.length?Math.round(ch/data.length*100):0}%</div></div>`;
+  document.getElementById('rep-tbody').innerHTML=data.length ? data.map((a,i)=>`
+    <tr>
+      <td style="color:#999">${i+1}</td>
+      <td><strong>${a.name}</strong></td><td>${a.phone}</td><td>${a.org||'—'}</td><td>${a.cat}</td><td>${EVENTS[a.event]}</td>
+      <td>${a.status==='checked-in'?'<span class="badge badge-success">✓ Checked in</span>':'<span class="badge badge-warning">⏳ Registered</span>'}</td>
+      <td>${a.time||'—'}</td>
+    </tr>`).join('')
+  : '<tr><td colspan="8" style="text-align:center;color:#999;padding:2rem;">No records match filter.</td></tr>';
+}
+
+function exportCSV() {
+  const evF=document.getElementById('rep-event').value;
+  const stF=document.getElementById('rep-status').value;
+  let data=attendees;
+  if(evF) data=data.filter(a=>a.event===evF);
+  if(stF) data=data.filter(a=>a.status===stF);
+  const rows=[['ID','Name','Mobile','Email','Organization','Category','Event','Status','Check-in Time'],
+    ...data.map(a=>[a.id,a.name,a.phone,a.email,a.org,a.cat,EVENTS[a.event],a.status,a.time||''])];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const el=document.createElement('a'); el.href=url; el.download='attendance_report.csv'; el.click();
+  URL.revokeObjectURL(url);
+  toast('⬇️ CSV exported!');
+}
+
+renderRegTable();
+renderCheckinTable();
+</script>
+</body>
+</html>
